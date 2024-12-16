@@ -45,7 +45,6 @@ public partial class Program
             {
                 Repack(inputPak);
             }
-            Console.ReadKey();
             if (args.Length > 0)
             {
                 break;
