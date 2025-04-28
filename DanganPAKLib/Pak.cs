@@ -153,5 +153,24 @@ namespace DanganPAKLib
             PakStream = stream;
             ReadHeader();
         }
+        public void Extract(string PAKPath, string OutPath = null)
+        {
+            Stream stream = new FileStream(PAKPath, FileMode.Open);
+            PakStream = stream;
+            ReadHeader();
+            string destination = "";
+
+            if (OutPath != null)
+            {
+                destination = OutPath;
+            }
+            else
+            {
+                destination = PAKPath + "_Extract_Pak";
+            }
+            //Directory.CreateDirectory(FolderPath);
+            ExtractAllFiles(OutPath + "/");
+            Dispose();
+        }
     }
 }
