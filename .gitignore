@@ -1,0 +1,10 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/PakExtracter/bin/Debug/net8.0
+/PakExtracter/obj
+/DanganPAKLib/.vs/DanganPAKLib
+/DanganPAKLib/bin/Debug/net8.0
+/DanganPAKLib/obj
+/.vs/PakLibGithub/v17
