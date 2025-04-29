@@ -65,7 +65,7 @@ namespace DanganPAKLib
             for (int i = 0; i < FileEntries.Count; i++)
             {
                 byte[] dat = GetFileData(i);
-                ExtractFile(i, Folder + i.ToString() + PakExtensionGuesser.GetMagicID(ref dat));
+                ExtractFile(i, Folder + i.ToString("D4") + PakExtensionGuesser.GetMagicID(ref dat));
             }
         }
         /*public static string PadNumbers(string input)
@@ -91,7 +91,8 @@ namespace DanganPAKLib
         }
         public static void Repack(string Folder, string OutPath = null)
         {
-            string[] files = Directory.GetFiles(Folder);
+            //string[] files = Directory.GetFiles(Folder);
+            string[] files = Directory.GetFiles(Folder).OrderBy(f => f).ToArray();
             var myComparer = new CustomComparer();
             List<string> temp = files.ToList();
             temp.Sort(myComparer);
@@ -151,6 +152,25 @@ namespace DanganPAKLib
         {
             PakStream = stream;
             ReadHeader();
+        }
+        public void Extract(string PAKPath, string OutPath = null)
+        {
+            Stream stream = new FileStream(PAKPath, FileMode.Open);
+            PakStream = stream;
+            ReadHeader();
+            string destination = "";
+
+            if (OutPath != null)
+            {
+                destination = OutPath;
+            }
+            else
+            {
+                destination = PAKPath + "_Extract_Pak";
+            }
+            //Directory.CreateDirectory(FolderPath);
+            ExtractAllFiles(OutPath + "/");
+            Dispose();
         }
     }
 }
