@@ -1,15 +1,12 @@
-﻿using System.Text.RegularExpressions;
-using System.Xml.Linq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-namespace DanganPAKLib
+﻿namespace DanganPAKLib
 {
     public class Pak
     {
         public List<PakEntry> FileEntries { get; set; } = new List<PakEntry>();
 
-        public Stream PakStream { get; set; }
+        private Stream PakStream { get; set; }
 
-        public void ReadHeader()
+        private void ReadHeader()
         {
             byte[] buf = new byte[4];
             FileEntries.Clear();
@@ -19,8 +16,6 @@ namespace DanganPAKLib
             int numberOfFiles = BitConverter.ToInt32(buf);
 
             List<int> offsets = new List<int>();
-
-            //offsets.Add((int)PakStream.Position);
 
             for (int i = 0; i < numberOfFiles; i++)
             {
@@ -34,80 +29,58 @@ namespace DanganPAKLib
                     Index = i,
                     Offset = offsets[i],
                 };
+
                 if (i < numberOfFiles - 1)
-                {
                     ent.Size = offsets[i + 1] - offsets[i];
-                }
                 else
-                {
                     ent.Size = (int)PakStream.Length - offsets[i];
-                }
+
                 FileEntries.Add(ent);
             }
         }
 
         public byte[] GetFileData(int i)
         {
-
             var file = FileEntries[i];
             PakStream.Position = file.Offset;
+
             byte[] data = new byte[file.Size];
             PakStream.Read(data);
+
             return data;
         }
         public void ExtractFile(int i, string path)
         {
             File.WriteAllBytes(path, GetFileData(i));
-
         }
         public void ExtractAllFiles(string Folder)
         {
+            if (!Directory.Exists(Folder))
+                Directory.CreateDirectory(Folder);
+
             for (int i = 0; i < FileEntries.Count; i++)
             {
                 byte[] dat = GetFileData(i);
-                ExtractFile(i, Folder + i.ToString("D4") + PakExtensionGuesser.GetMagicID(ref dat));
+                ExtractFile(i, Path.Combine(Folder, i.ToString("D4")) + PakExtensionGuesser.GetMagicID(ref dat));
             }
         }
-        /*public static string PadNumbers(string input)
+        public static void ExtractAllFiles(string packPath, string outFolder)
         {
-            return Regex.Replace(input, "[0-9]+", match => match.Value.PadLeft(10, '0'));
-        }*/
-        public int Compare(string x, string y)
-        {
-            var regex = new Regex("^(d+)");
-
-            // run the regex on both strings
-            var xRegexResult = regex.Match(x);
-            var yRegexResult = regex.Match(y);
-
-            // check if they are both numbers
-            if (xRegexResult.Success && yRegexResult.Success)
-            {
-                return int.Parse(xRegexResult.Groups[1].Value).CompareTo(int.Parse(yRegexResult.Groups[1].Value));
-            }
-
-            // otherwise return as string comparison
-            return x.CompareTo(y);
+            Pak pak = new Pak(packPath);
+            pak.ExtractAllFiles(outFolder);
+            pak.Dispose();
         }
-        public static void Repack(string Folder, string OutPath = null)
+
+        public static void Repack(string Folder, string destination = "")
         {
-            //string[] files = Directory.GetFiles(Folder);
-            string[] files = Directory.GetFiles(Folder).OrderBy(f => f).ToArray();
-            var myComparer = new CustomComparer();
-            List<string> temp = files.ToList();
-            temp.Sort(myComparer);
-            files = temp.ToArray();
+            List<string> temp = Directory.GetFiles(Folder).OrderBy(f => f).ToList();
 
-            string destination = "";
+            temp.Sort(new CustomComparer());
 
-            if (OutPath != null)
-            {
-                destination = OutPath;
-            }
-            else
-            {
-                destination = Folder + "_repacked.pak";
-            }
+            string[] files = temp.ToArray();
+
+            if (destination == "")
+                destination = Folder + ".pak";
 
             FileStream stream = new FileStream(destination, FileMode.Create);
             stream.Position = 0;
@@ -144,33 +117,15 @@ namespace DanganPAKLib
             PakStream.Close();
             FileEntries.Clear();
         }
-        public Pak()
-        {
-
-        }
         public Pak(Stream stream)
         {
             PakStream = stream;
             ReadHeader();
         }
-        public void Extract(string PAKPath, string OutPath = null)
+        public Pak(string filePath)
         {
-            Stream stream = new FileStream(PAKPath, FileMode.Open);
-            PakStream = stream;
+            PakStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             ReadHeader();
-            string destination = "";
-
-            if (OutPath != null)
-            {
-                destination = OutPath;
-            }
-            else
-            {
-                destination = PAKPath + "_Extract_Pak";
-            }
-            //Directory.CreateDirectory(FolderPath);
-            ExtractAllFiles(OutPath + "/");
-            Dispose();
         }
     }
 }

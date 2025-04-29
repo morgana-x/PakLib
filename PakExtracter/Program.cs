@@ -1,55 +1,38 @@
-﻿// See https://aka.ms/new-console-template for more information
-using DanganPAKLib;
+﻿using DanganPAKLib;
 
 public partial class Program
 {
-    public static void Extract(string inputPak)
+    public static void Execute(string path)
     {
-        FileStream stream = new FileStream(inputPak, FileMode.Open, FileAccess.Read);
-        Pak pak = new Pak(stream);
-        string outPutDirectory = Directory.GetParent(inputPak).FullName + "\\" + Path.GetFileName(inputPak) + "_extracted\\";
-        if (!Directory.Exists(outPutDirectory))
-            Directory.CreateDirectory(outPutDirectory);
-        pak.ExtractAllFiles(outPutDirectory);
-        pak.Dispose();
+        if (File.Exists(path))
+        {
+            Pak.ExtractAllFiles(path, path.Replace(".pak", "_extracted"));
+            Console.WriteLine($"Extracted {path}.");
+            return;
+        }
 
-        Console.WriteLine("Extracted " + inputPak);
-    }
-    public static void Repack(string inputPak)
-    {
-        //FileStream stream = new FileStream(inputPak, FileMode.Open, FileAccess.Read);
-        //Pak pak = new Pak(stream);
-        Pak.Repack(inputPak);
-        Console.WriteLine("Repacked " + inputPak);
+        if (Directory.Exists(path))
+        {
+            Pak.Repack(path);
+            Console.WriteLine($"Repacked {path}.");
+            return;
+        }
+
+        Console.WriteLine($"Couldn't find file or folder \"{path}\"");
     }
     public static void Main(string[] args)
     {
+        if (args.Length > 0)
+        {
+            Execute(args[0]);
+            return;
+        }
+
         while (true)
         {
             Console.Clear();
-          
-            string inputPak = "";
-
-            if (args.Length < 1)
-            {
-                Console.WriteLine("Drag and drop the file you want to extract\nOr\nDrag drop folder you want to repack");
-                inputPak = Console.ReadLine().Replace("\"", "");
-            }
-   
-
-            if (File.Exists(inputPak))
-            {
-                Extract(inputPak);
-            }
-            else if (Directory.Exists(inputPak))
-            {
-                Repack(inputPak);
-            }
-            if (args.Length > 0)
-            {
-                break;
-            }
+            Console.WriteLine("Drag and drop the Pak file to Extract or Folder to Repack");
+            Execute(Console.ReadLine().Replace("\"",""));
         }
     }
-
 }
