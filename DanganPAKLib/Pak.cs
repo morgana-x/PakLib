@@ -3,39 +3,31 @@
     public class Pak
     {
         public List<PakEntry> FileEntries { get; set; } = new List<PakEntry>();
-
         private Stream PakStream { get; set; }
+        private BinaryReader PakReader { get; set; }
 
         private void ReadHeader()
         {
             byte[] buf = new byte[4];
             FileEntries.Clear();
-            PakStream.Position = 0;
 
-            PakStream.Read(buf);
-            int numberOfFiles = BitConverter.ToInt32(buf);
+            PakReader.BaseStream.Seek(0, SeekOrigin.Begin);
+
+;           int numberOfFiles = PakReader.ReadInt32();
 
             List<int> offsets = new List<int>();
 
             for (int i = 0; i < numberOfFiles; i++)
-            {
-                PakStream.Read(buf);
-                offsets.Add(BitConverter.ToInt32(buf));
-            }
+                offsets.Add(PakReader.ReadInt32());
+   
             for (int i = 0; i < numberOfFiles; i++)
             {
-                PakEntry ent = new PakEntry()
+                FileEntries.Add(new PakEntry()
                 {
                     Index = i,
                     Offset = offsets[i],
-                };
-
-                if (i < numberOfFiles - 1)
-                    ent.Size = offsets[i + 1] - offsets[i];
-                else
-                    ent.Size = (int)PakStream.Length - offsets[i];
-
-                FileEntries.Add(ent);
+                    Size = (i < numberOfFiles - 1) ? (offsets[i + 1] - offsets[i]) : ((int)PakStream.Length - offsets[i])
+                });
             }
         }
 
@@ -51,6 +43,13 @@
         }
         public void ExtractFile(int i, string path)
         {
+            if (path.EndsWith(".pak"))
+            {
+                Pak pak = new Pak(GetFileData(i));
+                pak.ExtractAllFiles(path.Substring(0, path.Length-4));
+                pak.Dispose();
+                return;
+            }
             File.WriteAllBytes(path, GetFileData(i));
         }
         public void ExtractAllFiles(string Folder)
@@ -70,25 +69,29 @@
             pak.ExtractAllFiles(outFolder);
             pak.Dispose();
         }
-
-        public static void Repack(string Folder, string destination = "")
+        private static byte[] Repack(string Folder)
         {
-            List<string> temp = Directory.GetFiles(Folder).OrderBy(f => f).ToList();
-
+            MemoryStream stream = new MemoryStream();
+            Repack(Folder, stream);
+            byte[] data = new byte[stream.Length];
+            stream.Position = 0;
+            stream.Read(data);
+            stream.Dispose();
+            stream.Close();
+            return data;
+        }
+        private static void Repack(string Folder, Stream stream)
+        {
+            List<string> temp = Directory.GetFiles(Folder).ToList();
+            temp.AddRange(Directory.GetDirectories(Folder));
             temp.Sort(new CustomComparer());
 
             string[] files = temp.ToArray();
 
-            if (destination == "")
-                destination = Folder + ".pak";
-
-            FileStream stream = new FileStream(destination, FileMode.Create);
             stream.Position = 0;
-
 
             MemoryStream datStream = new MemoryStream();
             datStream.Position = 0;
-
 
             stream.Write(BitConverter.GetBytes(files.Length));
 
@@ -97,8 +100,10 @@
             for (int i = 0; i < files.Length; i++)
             {
                 stream.Write(BitConverter.GetBytes(offset));
-                byte[] data = File.ReadAllBytes(files[i]);
+
+                byte[] data = File.Exists(files[i]) ? File.ReadAllBytes(files[i]) : Repack(files[i]);
                 datStream.Write(data);
+
                 offset += data.Length;
             }
 
@@ -107,24 +112,38 @@
 
             datStream.Dispose();
             datStream.Close();
+        }
+        public static void Repack(string Folder, string destination = "")
+        {
+            if (destination == "")
+                destination = Folder + ".pak";
 
-            stream.Dispose();
-            stream.Close();
+            using (var fs = new FileStream(destination, FileMode.Create, FileAccess.Write))
+                Repack(Folder, fs);
         }
         public void Dispose()
         {
             PakStream.Dispose();
             PakStream.Close();
+            PakReader.Dispose();
             FileEntries.Clear();
         }
         public Pak(Stream stream)
         {
             PakStream = stream;
+            PakReader = new BinaryReader(PakStream);
             ReadHeader();
         }
         public Pak(string filePath)
         {
             PakStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            PakReader = new BinaryReader(PakStream);
+            ReadHeader();
+        }
+        public Pak(byte[] data)
+        {
+            PakStream = new MemoryStream(data);
+            PakReader = new BinaryReader(PakStream);
             ReadHeader();
         }
     }
