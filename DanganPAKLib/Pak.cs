@@ -8,7 +8,6 @@
 
         private void ReadHeader()
         {
-            byte[] buf = new byte[4];
             FileEntries.Clear();
 
             PakReader.BaseStream.Seek(0, SeekOrigin.Begin);
