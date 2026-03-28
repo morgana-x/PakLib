@@ -81,7 +81,7 @@
         }
         private static void Repack(string Folder, Stream stream)
         {
-            List<string> temp = Directory.GetFiles(Folder).ToList();
+            List<string> temp = Directory.GetFiles(Folder).Where(x => !Path.GetFileName(x).StartsWith('.')).ToList();
             temp.AddRange(Directory.GetDirectories(Folder));
             temp.Sort(new CustomComparer());
 
@@ -147,3 +147,4 @@
         }
     }
 }
+
