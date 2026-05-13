@@ -14,6 +14,12 @@ namespace DanganPAKLib
                 x = r.Match(x).Value.Replace("[","").Replace("]","");
             if (y.Contains("[") && y.Contains("]"))
                 y = r.Match(y).Value.Replace("[", "").Replace("]", "");
+            
+            if (!int.TryParse(x, out var ix ) || !int.TryParse(y, out var iy))
+            {
+                return StringComparer.InvariantCultureIgnoreCase.Compare(x, y);
+            }
+            
             return int.Parse(x).CompareTo(int.Parse(y));
         }
     }
