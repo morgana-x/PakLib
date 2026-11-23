@@ -26,7 +26,8 @@ public class Program
     {
         if (args.Length > 0)
         {
-            Execute(args[0]);
+            foreach (var a in args)
+                Execute(a);
             return;
         }
 
