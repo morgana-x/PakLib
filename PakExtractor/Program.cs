@@ -27,7 +27,15 @@ public class Program
         if (args.Length > 0)
         {
             foreach (var a in args)
-                Execute(a);
+                try
+                {
+                    Execute(a);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                }
+          
             return;
         }
 
